@@ -1,17 +1,18 @@
 #!/usr/bin/env python
+"""Build the add-on using setuptools.
 
-from os.path import abspath, dirname, join as pjoin
-import zipfile
+This script is a thin wrapper around ``python -m build`` to produce a
+wheel and source distribution for the add-on.
+"""
 
-SRC_DIR = dirname(abspath(__file__))
+import subprocess
+import sys
 
-with zipfile.ZipFile('add_mesh_SpaceshipGenerator.zip', 'w', zipfile.ZIP_DEFLATED) as arch:
-    for filename in [
-            '__init__.py',
-            'spaceship_generator.py',
-            'textures/hull_normal.png',
-            'textures/hull_lights_emit.png',
-            'textures/hull_lights_diffuse.png']:
-        arch.write(pjoin(SRC_DIR, filename), 'add_mesh_SpaceshipGenerator/'+filename)
 
-print('created file: add_mesh_SpaceshipGenerator.zip')
+def main() -> int:
+    return subprocess.call([sys.executable, "-m", "build"])
+
+
+if __name__ == "__main__":  # pragma: no cover - script entry point
+    raise SystemExit(main())
+

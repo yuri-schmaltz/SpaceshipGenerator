@@ -1,5 +1,8 @@
-.*
-__pycache__
+__pycache__/
 *~
 *.zip
 thumbs.db
+.DS_Store
+.idea/
+.vscode/
+*.pyc
