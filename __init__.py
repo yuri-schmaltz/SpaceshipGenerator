@@ -11,15 +11,28 @@ bl_info = {
 }
 
 if "bpy" in locals():
-    # reload logic (magic)
     import importlib
-    importlib.reload(spaceship_generator)
+    importlib.reload(spaceship_generator)  # type: ignore
 else:
     from . import spaceship_generator
 
 import bpy
-from bpy.props import StringProperty, BoolProperty, IntProperty
-from bpy.types import Operator
+try:
+    from bpy.props import StringProperty, BoolProperty, IntProperty
+except Exception:  # pragma: no cover - used for testing without Blender
+    def StringProperty(*args, **kwargs):
+        return None
+
+    def BoolProperty(*args, **kwargs):
+        return None
+
+    def IntProperty(*args, **kwargs):
+        return None
+try:
+    from bpy.types import Operator
+except Exception:  # pragma: no cover - used for testing without Blender
+    class Operator:  # type: ignore
+        pass
 
 class GenerateSpaceship(Operator):
     """Procedurally generate 3D spaceships from a random seed."""
