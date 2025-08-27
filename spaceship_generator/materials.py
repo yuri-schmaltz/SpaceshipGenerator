@@ -24,21 +24,21 @@ class Material(IntEnum):
     glow_disc = 4
 
 
-def getShaderNode(mat):  # pragma: no cover - Blender specific
+def get_shader_node(mat):  # pragma: no cover - Blender specific
     ntree = mat.node_tree
     node_out = ntree.get_output_node("EEVEE")
     shader_node = node_out.inputs["Surface"].links[0].from_node
     return shader_node
 
 
-def getShaderInput(mat, name):  # pragma: no cover - Blender specific
-    shaderNode = getShaderNode(mat)
-    return shaderNode.inputs[name]
+def get_shader_input(mat, name):  # pragma: no cover - Blender specific
+    shader_node = get_shader_node(mat)
+    return shader_node.inputs[name]
 
 
 def add_hull_normal_map(mat, hull_normal_map):  # pragma: no cover - Blender specific
     ntree = mat.node_tree
-    shader = getShaderNode(mat)
+    shader = get_shader_node(mat)
     links = ntree.links
 
     teximage_node = ntree.nodes.new("ShaderNodeTexImage")
@@ -54,7 +54,7 @@ def add_hull_normal_map(mat, hull_normal_map):  # pragma: no cover - Blender spe
 
 
 def set_hull_mat_basics(mat, color, hull_normal_map):  # pragma: no cover - Blender specific
-    shader_node = getShaderNode(mat)
+    shader_node = get_shader_node(mat)
     shader_node.inputs["Specular"].default_value = 0.1
     shader_node.inputs["Base Color"].default_value = color
 
@@ -93,7 +93,7 @@ def create_materials():  # pragma: no cover - Blender specific
         resource_path("textures", "hull_lights_emit.png"), check_existing=True
     )
     ntree = mat.node_tree
-    shader = getShaderNode(mat)
+    shader = get_shader_node(mat)
     links = ntree.links
     teximage_node = ntree.nodes.new("ShaderNodeTexImage")
     teximage_node.image = hull_lights_diffuse
@@ -117,13 +117,13 @@ def create_materials():  # pragma: no cover - Blender specific
     )
 
     mat = ret[Material.exhaust_burn]
-    shader_node = getShaderNode(mat)
+    shader_node = get_shader_node(mat)
     shader_node.inputs["Emission"].default_value = (1.0, 0.6, 0.2, 1.0)
     shader_node.inputs["Emission Strength"].default_value = 10
     shader_node.inputs["Roughness"].default_value = 0.5
 
     mat = ret[Material.glow_disc]
-    shader_node = getShaderNode(mat)
+    shader_node = get_shader_node(mat)
     shader_node.inputs["Emission"].default_value = (0.8, 0.8, 1.0, 1.0)
     shader_node.inputs["Emission Strength"].default_value = 10
 

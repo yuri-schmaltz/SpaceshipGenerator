@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 import os
 from math import cos, sin, radians
-from random import randint, randrange, random, seed, uniform
+from random import randint, random, seed, uniform
 
 try:  # pragma: no cover - Blender specific
     import bpy  # type: ignore
@@ -59,7 +59,7 @@ def generate_spaceship(
     for face in bm.faces[:]:
         if abs(face.normal.x) > 0.5:
             hull_segment_length = uniform(0.3, 1)
-            num_hull_segments = randrange(num_hull_segments_min, num_hull_segments_max)
+            num_hull_segments = randint(num_hull_segments_min, num_hull_segments_max)
             hull_segment_range = range(num_hull_segments)
             for i in hull_segment_range:
                 is_last_hull_segment = i == hull_segment_range[-1]
@@ -107,7 +107,7 @@ def generate_spaceship(
                 continue
             if random() > 0.85:
                 hull_piece_length = uniform(0.1, 0.4)
-                for _ in range(randrange(num_asymmetry_segments_min, num_asymmetry_segments_max)):
+                for _ in range(randint(num_asymmetry_segments_min, num_asymmetry_segments_max)):
                     face = extrude_face(bm, face, hull_piece_length)
                     if random() > 0.25:
                         s = 1 / uniform(1.1, 1.5)
@@ -255,7 +255,7 @@ def generate_movie(
             reset_scene()
             obj = generate_spaceship()
 
-            lowest_z = centre = min((Vector(b).z for b in obj.bound_box))
+            lowest_z = min((Vector(b).z for b in obj.bound_box))
             plane_obj = bpy.data.objects["Plane"] if "Plane" in bpy.data.objects else None
             if plane_obj:
                 plane_obj.location.z = lowest_z - 0.3
