@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from math import cos, pi, radians, sin, sqrt
 from random import randint, random, uniform
+from functools import wraps
 
 try:  # pragma: no cover - Blender specific
     import bmesh  # type: ignore
@@ -13,6 +14,28 @@ except Exception:  # pragma: no cover
     Matrix = Vector = None  # type: ignore
 
 from .materials import Material
+
+
+def require_valid_face(min_verts: int = 3, default=None):
+    """Decorator to skip operations on invalid faces."""
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            face = kwargs.get("face")
+            if face is None:
+                face = args[-1]
+            if (
+                face is None
+                or not getattr(face, "is_valid", False)
+                or len(face.verts) < min_verts
+            ):
+                return default
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 def extrude_face(bm, face, translate_forwards: float = 0.0, extruded_face_list=None):
@@ -61,8 +84,8 @@ def get_face_matrix(face, pos=None):
     """Return an approximate transform matrix for ``face``."""
 
     x_axis = (face.verts[1].co - face.verts[0].co).normalized()
-    y_axis = (face.verts[3].co - face.verts[0].co).normalized()
-    normal = x_axis.cross(y_axis)
+    normal = face.normal
+    y_axis = normal.cross(x_axis).normalized()
     if pos is None:
         pos = face.verts[0].co
     mat = Matrix((x_axis, y_axis, normal)).to_4x4()
@@ -70,15 +93,17 @@ def get_face_matrix(face, pos=None):
     return mat
 
 
+@require_valid_face(min_verts=3, default=(0.0, 0.0))
 def get_face_width_and_height(face):
-    width = (face.verts[1].co - face.verts[0].co).length
-    height = (face.verts[3].co - face.verts[0].co).length
+    v0 = face.verts[0].co
+    width = (face.verts[1].co - v0).length
+    far_vert = max(face.verts[2:], key=lambda v: (v.co - v0).length)
+    height = (far_vert.co - v0).length
     return width, height
 
 
+@require_valid_face(default=1.0)
 def get_aspect_ratio(face) -> float:
-    if not face.is_valid:
-        return 1.0
     face_aspect_ratio = max(0.01, face.edges[0].calc_length() / face.edges[1].calc_length())
     if face_aspect_ratio < 1.0:
         face_aspect_ratio = 1.0 / face_aspect_ratio
@@ -89,10 +114,8 @@ def is_rear_face(face) -> bool:
     return face.normal.x < -0.95
 
 
+@require_valid_face()
 def add_exhaust_to_face(bm, face):
-    if not face.is_valid:
-        return
-
     num_cuts = randint(1, int(4 - get_aspect_ratio(face)))
     result = bmesh.ops.subdivide_edges(
         bm, edges=face.edges[:], cuts=num_cuts, fractal=0.02, use_grid_fill=True
@@ -114,10 +137,8 @@ def add_exhaust_to_face(bm, face):
                 scale_face(bm, face, scale_inner, scale_inner, scale_inner)
 
 
+@require_valid_face()
 def add_grid_to_face(bm, face):
-    if not face.is_valid:
-        return
-
     result = bmesh.ops.subdivide_edges(
         bm,
         edges=face.edges[:],
@@ -138,11 +159,8 @@ def add_grid_to_face(bm, face):
                     extruded_face.material_index = material_index
             scale_face(bm, face, scale, scale, scale)
 
-
+@require_valid_face(min_verts=4)
 def add_cylinders_to_face(bm, face):
-    if not face.is_valid or len(face.verts[:]) < 4:
-        return
-
     horizontal_step = randint(1, 3)
     vertical_step = randint(1, 3)
     num_segments = randint(6, 12)
@@ -172,11 +190,8 @@ def add_cylinders_to_face(bm, face):
                 matrix=cylinder_matrix,
             )
 
-
+@require_valid_face(min_verts=4)
 def add_weapons_to_face(bm, face):
-    if not face.is_valid or len(face.verts[:]) < 4:
-        return
-
     horizontal_step = randint(1, 2)
     vertical_step = randint(1, 2)
     num_segments = 16
@@ -220,21 +235,15 @@ def add_weapons_to_face(bm, face):
                 matrix=barrel_matrix,
             )
 
-
+@require_valid_face(min_verts=4)
 def add_sphere_to_face(bm, face):
-    if not face.is_valid or len(face.verts[:]) < 4:
-        return
-
     face_width, face_height = get_face_width_and_height(face)
     size = min(face_width, face_height)
     matrix = get_face_matrix(face) @ Matrix.Translation((0, 0, size * 0.5))
     bmesh.ops.create_uvsphere(bm, u_segments=8, v_segments=8, diameter=size, matrix=matrix)
 
-
+@require_valid_face(min_verts=4)
 def add_surface_antenna_to_face(bm, face):
-    if not face.is_valid or len(face.verts[:]) < 4:
-        return
-
     face_width, face_height = get_face_width_and_height(face)
     size = min(face_width, face_height)
     matrix = get_face_matrix(face) @ Matrix.Translation((0, 0, size * 0.5))
@@ -249,11 +258,8 @@ def add_surface_antenna_to_face(bm, face):
         matrix=matrix,
     )
 
-
+@require_valid_face(min_verts=4)
 def add_disc_to_face(bm, face):
-    if not face.is_valid or len(face.verts[:]) < 4:
-        return
-
     face_width, face_height = get_face_width_and_height(face)
     size = min(face_width, face_height)
     matrix = get_face_matrix(face)
